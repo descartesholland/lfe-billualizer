@@ -64,7 +64,7 @@ public class BillExplorer extends JPanel implements ActionListener {
         fc = new JFileChooser();
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 
-        openButton = new JButton("Open a File...");
+        openButton = new JButton("Choose Root Directory...");
         openButton.addActionListener(this);
 
         //For layout purposes, put the buttons in a separate panel
