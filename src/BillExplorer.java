@@ -40,14 +40,18 @@ import org.python.modules.cPickle;
  *
  */
 public class BillExplorer extends JPanel implements ActionListener {
+    boolean debug = false;
+    
     private static final long serialVersionUID = -2714378087612244399L;
     JButton openButton;
     JTextArea log;
     JFileChooser fc;
     JList<String> stateList;
-    
-    String newline = "\n";
-    
+
+    HashMap<String, ArrayList<String>> directoryToURL;
+
+    final static String newline = "\n";
+
     static File masterDir;
 
     public BillExplorer() {
@@ -79,21 +83,48 @@ public class BillExplorer extends JPanel implements ActionListener {
         leftSplitPane.setDividerLocation(350);
         logScrollPane.setMinimumSize(new Dimension(100, 100));
         stateListScrollPane.setMinimumSize(new Dimension(100, 200));
-        
+
         //Main pane tabs:
         JTabbedPane tabPane = new JTabbedPane();
-        
+
         JTextArea jsonViewer = new JTextArea(200, 200);
         jsonViewer.setMargin(new Insets(5, 5, 5, 5));
         jsonViewer.setEditable(false);
         JScrollPane jsonViewerScrollPane = new JScrollPane(jsonViewer);
         tabPane.addTab("JSON", jsonViewerScrollPane);
+
+        //Create bill viewer module:
+        directoryToURL = loadPickle("json_to_url_dict.p");
+        HashMap<String, ArrayList<String>> fileNameToURL = new HashMap<String, ArrayList<String>>();
+        for(String key : directoryToURL.keySet()) {
+            try {
+                fileNameToURL.put(key.substring(key.lastIndexOf('/')+1), directoryToURL.get(key));
+            }
+            catch(IndexOutOfBoundsException e) {
+                log.append("Non-json file \"" + key + "\" detected" + newline);
+                if(debug) e.printStackTrace();
+            }
+        }
+        String[] billNames = new String[fileNameToURL.keySet().size()];
+        fileNameToURL.keySet().toArray(billNames);
+        JList<String> directories = new JList<String>(billNames);
+        directories.setSelectedIndex(0);
+        JScrollPane directoriesScrollPane = new JScrollPane(directories);
+
+        JEditorPane billsViewer = new JEditorPane();
+        try {
+            billsViewer.setPage(fileNameToURL.get(directories.getSelectedValue()).get(0));
+        } catch (IOException e) {
+            log.append("Invalid URL." + newline);
+            if(debug) e.printStackTrace();
+        }
+        JScrollPane billsViewerScrollPane = new JScrollPane(billsViewer);
+        JSplitPane billsViewerSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, directoriesScrollPane, billsViewerScrollPane);
         
-//        JEditorPane billsViewer = new JEditorPane
-        System.out.println(loadPickle());
+        tabPane.addTab("Bills", billsViewerSplitPane);
         
         JSplitPane masterSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftSplitPane, tabPane);
-      
+
         //Add the buttons and the log to this panel.
         add(buttonPanel, BorderLayout.PAGE_START);
         add(masterSplitPane, BorderLayout.LINE_START);  
@@ -143,12 +174,12 @@ public class BillExplorer extends JPanel implements ActionListener {
                 masterDir = fc.getSelectedFile();
                 //This is where a real application would open the file.
                 log.append("Opening: " + masterDir.getName() + "." + newline);
-                
+
                 DefaultListModel<String> model = new DefaultListModel<String>();
                 for(String fileName : masterDir.list())
                     model.addElement(fileName);
                 stateList.setModel(model);
-                
+
             } 
             else
                 log.append("Open command cancelled by user." + newline);
@@ -156,9 +187,9 @@ public class BillExplorer extends JPanel implements ActionListener {
         }
     }        
 
-    public HashMap<String, ArrayList<String>> loadPickle() {
+    public HashMap<String, ArrayList<String>> loadPickle(String pickle) {
         HashMap<String, ArrayList<String>> pickleMap = new HashMap<String, ArrayList<String>>();
-        File f = new File(System.getProperty("user.dir") + "//assets//" + "json_to_url_dict.p");
+        File f = new File(System.getProperty("user.dir") + "//assets//" + pickle);
         log.append("Loading pickle of length " + f.length() + newline);
         BufferedReader bufR;
         StringBuilder strBuilder = new StringBuilder();
@@ -184,7 +215,7 @@ public class BillExplorer extends JPanel implements ActionListener {
             ArrayList<String> countryArrList = new ArrayList<String>(countryList);
             pickleMap.put(appId, countryArrList);
         }
-//        System.out.println(idToCountries.toString());
+        //        System.out.println(idToCountries.toString());
         return pickleMap;
     }
 }
