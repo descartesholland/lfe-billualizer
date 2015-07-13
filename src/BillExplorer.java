@@ -27,6 +27,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.ListSelectionModel;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.event.ListSelectionEvent;
@@ -106,22 +107,32 @@ public class BillExplorer extends JPanel implements ActionListener, ListSelectio
         String[] billNames = new String[fileNameToURL.keySet().size()];
         fileNameToURL.keySet().toArray(billNames);
         directories = new JList<String>(billNames);
+        directories.setPreferredSize(new Dimension(400, 200));
         directories.setSelectedIndex(0);
         directories.addListSelectionListener(this);
+        directories.setLayoutOrientation(JList.VERTICAL_WRAP);
         JScrollPane directoriesScrollPane = new JScrollPane(directories);
-
+        directoriesScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
+        directoriesScrollPane.setPreferredSize(new Dimension(300, 200));
         
         //Main pane tabs:
         JTabbedPane tabPane = new JTabbedPane();
-
-        JTextArea jsonViewer = new JTextArea(100, 200);
+        tabPane.setMinimumSize(new Dimension(200, 400));
+        tabPane.setPreferredSize(new Dimension(700, 500));
+        
+        JTextArea jsonViewer = new JTextArea(30, 40);
+        jsonViewer.setPreferredSize(new Dimension(700, 300));
         jsonViewer.setMargin(new Insets(5, 5, 5, 5));
         jsonViewer.setEditable(false);
         JScrollPane jsonViewerScrollPane = new JScrollPane(jsonViewer);
+//        jsonViewerScrollPane.setPreferredSize(new Dimension(200, 200));
         tabPane.addTab("JSON", jsonViewerScrollPane);
 
         //Create bill viewer module:
         billsViewer = new JEditorPane();
+        billsViewer.setPreferredSize(new Dimension(400, 300));
+        billsViewer.setMargin(new Insets(5, 5, 5, 5));
+        billsViewer.setEditable(false);
 //        try {
 //            billsViewer.setPage(fileNameToURL.get(directories.getSelectedValue()).get(0));
 //        } catch (IOException e) {
@@ -129,11 +140,13 @@ public class BillExplorer extends JPanel implements ActionListener, ListSelectio
 //            if(debug) e.printStackTrace();
 //        }
         JScrollPane billsViewerScrollPane = new JScrollPane(billsViewer);
+//        billsViewerScrollPane.setPreferredSize(new Dimension(200, 150));
 //        JSplitPane billsViewerSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, directoriesScrollPane, billsViewerScrollPane);
         
         tabPane.addTab("Bills", billsViewerScrollPane);
         
         JSplitPane centerSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, directoriesScrollPane, tabPane);
+        centerSplitPane.setDividerLocation(150);
         JSplitPane masterSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftSplitPane, centerSplitPane);
 
         //Add the buttons and the log to this panel.
@@ -170,8 +183,9 @@ public class BillExplorer extends JPanel implements ActionListener, ListSelectio
         frame.add(new BillExplorer());
 
         //Display the window.
+        frame.setPreferredSize(new Dimension(1000, 600));
+
         frame.pack();
-        frame.setMinimumSize(new Dimension(500, 600));
         frame.setVisible(true);
     }
 
