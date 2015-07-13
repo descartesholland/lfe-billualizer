@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 import javax.swing.DefaultListModel;
+import javax.swing.DefaultListSelectionModel;
 import javax.swing.JButton;
 import javax.swing.JEditorPane;
 import javax.swing.JFileChooser;
@@ -25,8 +26,11 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
+import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
 import org.python.core.PyDictionary;
 import org.python.core.PyFile;
@@ -39,7 +43,7 @@ import org.python.modules.cPickle;
  * @author android
  *
  */
-public class BillExplorer extends JPanel implements ActionListener {
+public class BillExplorer extends JPanel implements ActionListener, ListSelectionListener {
     boolean debug = false;
     
     private static final long serialVersionUID = -2714378087612244399L;
@@ -47,8 +51,11 @@ public class BillExplorer extends JPanel implements ActionListener {
     JTextArea log;
     JFileChooser fc;
     JList<String> stateList;
+    JList<String> directories;
+    JEditorPane billsViewer;
 
     HashMap<String, ArrayList<String>> directoryToURL;
+    HashMap<String, ArrayList<String>> fileNameToURL;
 
     final static String newline = "\n";
 
@@ -84,18 +91,9 @@ public class BillExplorer extends JPanel implements ActionListener {
         logScrollPane.setMinimumSize(new Dimension(100, 100));
         stateListScrollPane.setMinimumSize(new Dimension(100, 200));
 
-        //Main pane tabs:
-        JTabbedPane tabPane = new JTabbedPane();
-
-        JTextArea jsonViewer = new JTextArea(200, 200);
-        jsonViewer.setMargin(new Insets(5, 5, 5, 5));
-        jsonViewer.setEditable(false);
-        JScrollPane jsonViewerScrollPane = new JScrollPane(jsonViewer);
-        tabPane.addTab("JSON", jsonViewerScrollPane);
-
-        //Create bill viewer module:
+        //Bill explorer:
         directoryToURL = loadPickle("json_to_url_dict.p");
-        HashMap<String, ArrayList<String>> fileNameToURL = new HashMap<String, ArrayList<String>>();
+        fileNameToURL = new HashMap<String, ArrayList<String>>();
         for(String key : directoryToURL.keySet()) {
             try {
                 fileNameToURL.put(key.substring(key.lastIndexOf('/')+1), directoryToURL.get(key));
@@ -107,23 +105,36 @@ public class BillExplorer extends JPanel implements ActionListener {
         }
         String[] billNames = new String[fileNameToURL.keySet().size()];
         fileNameToURL.keySet().toArray(billNames);
-        JList<String> directories = new JList<String>(billNames);
+        directories = new JList<String>(billNames);
         directories.setSelectedIndex(0);
+        directories.addListSelectionListener(this);
         JScrollPane directoriesScrollPane = new JScrollPane(directories);
 
-        JEditorPane billsViewer = new JEditorPane();
-        try {
-            billsViewer.setPage(fileNameToURL.get(directories.getSelectedValue()).get(0));
-        } catch (IOException e) {
-            log.append("Invalid URL." + newline);
-            if(debug) e.printStackTrace();
-        }
+        
+        //Main pane tabs:
+        JTabbedPane tabPane = new JTabbedPane();
+
+        JTextArea jsonViewer = new JTextArea(100, 200);
+        jsonViewer.setMargin(new Insets(5, 5, 5, 5));
+        jsonViewer.setEditable(false);
+        JScrollPane jsonViewerScrollPane = new JScrollPane(jsonViewer);
+        tabPane.addTab("JSON", jsonViewerScrollPane);
+
+        //Create bill viewer module:
+        billsViewer = new JEditorPane();
+//        try {
+//            billsViewer.setPage(fileNameToURL.get(directories.getSelectedValue()).get(0));
+//        } catch (IOException e) {
+//            log.append("Invalid URL." + newline);
+//            if(debug) e.printStackTrace();
+//        }
         JScrollPane billsViewerScrollPane = new JScrollPane(billsViewer);
-        JSplitPane billsViewerSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, directoriesScrollPane, billsViewerScrollPane);
+//        JSplitPane billsViewerSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, directoriesScrollPane, billsViewerScrollPane);
         
-        tabPane.addTab("Bills", billsViewerSplitPane);
+        tabPane.addTab("Bills", billsViewerScrollPane);
         
-        JSplitPane masterSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftSplitPane, tabPane);
+        JSplitPane centerSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, directoriesScrollPane, tabPane);
+        JSplitPane masterSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftSplitPane, centerSplitPane);
 
         //Add the buttons and the log to this panel.
         add(buttonPanel, BorderLayout.PAGE_START);
@@ -179,7 +190,11 @@ public class BillExplorer extends JPanel implements ActionListener {
                 for(String fileName : masterDir.list())
                     model.addElement(fileName);
                 stateList.setModel(model);
-
+                
+                ListSelectionModel listSel = new DefaultListSelectionModel();
+                listSel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+                stateList.setSelectionModel(listSel);
+                stateList.setSelectedIndex(0);
             } 
             else
                 log.append("Open command cancelled by user." + newline);
@@ -217,5 +232,17 @@ public class BillExplorer extends JPanel implements ActionListener {
         }
         //        System.out.println(idToCountries.toString());
         return pickleMap;
+    }
+
+    @Override
+    public void valueChanged(ListSelectionEvent arg0) {
+        if(arg0.getSource() == directories) {
+            try {
+                billsViewer.setPage(fileNameToURL.get(directories.getSelectedValue()).get(0));
+            } catch (IOException e) {
+                log.append("Invalid URL." + newline);
+                if(debug) e.printStackTrace();
+            }
+        }
     }
 }
