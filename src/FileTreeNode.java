@@ -50,6 +50,10 @@ public class FileTreeNode implements Comparable<FileTreeNode> {
         return this.title;
     }
 
+    public File getFile() {
+        return this.file;
+    }
+    
     public int getChildCount() {
         return this.children.size();
     }
