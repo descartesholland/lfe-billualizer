@@ -231,17 +231,15 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
                 stateList.setSelectionModel(listSel);
                 stateList.setSelectedIndex(0);
                 selectedStateJsonDir = new File(new File(new File(new File(masterDir, stateList.getSelectedValue()), "json"), "bills"), stateList.getSelectedValue().toLowerCase());
-                
-                DefaultMutableTreeNode root = new DefaultMutableTreeNode("state");
-//                createNodes(root, selectedState);
-                directories.setModel(createModel(root, selectedStateJsonDir));
-//                directories = new JTree(root);
-//                directories.setPreferredSize(new Dimension(200, 500));
-//                directories.addTreeSelectionListener(this);
+
+//                DefaultMutableTreeNode root = new DefaultMutableTreeNode("state");
+//                directories.setModel(createModel(root, selectedStateJsonDir));
+                directories.setModel(new MyTreeModel(new FileTreeNode(selectedStateJsonDir, stateList.getSelectedValue())));
             } 
-            else
+            else {
                 log.append("Open command cancelled by user." + newline);
-            log.setCaretPosition(log.getDocument().getLength());
+                log.setCaretPosition(log.getDocument().getLength());
+            }
         }
     }        
 
@@ -290,13 +288,13 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
 
     @Override
     public void valueChanged(TreeSelectionEvent arg0) {
-        if(arg0.getSource() == directories) {
-            try {
-                billsViewer.setPage(fileNameToURL.get( ((FileTreeNode) directories.getSelectionPath().getLastPathComponent()).getTitle()).get(0));
-            } catch (IOException e) {
-                log.append("Invalid URL." + newline);
-                if(debug) e.printStackTrace();
-            }
-        }
+//        if(arg0.getSource() == directories) {
+//            try {
+//                billsViewer.setPage(fileNameToURL.get( ((FileTreeNode) directories.getSelectionPath().getLastPathComponent()).getTitle()).get(0));
+//            } catch (IOException e) {
+//                log.append("Invalid URL." + newline);
+//                if(debug) e.printStackTrace();
+//            }
+//        }
     }
 }
