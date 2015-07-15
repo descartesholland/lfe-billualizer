@@ -113,7 +113,6 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         fileNameToURL.keySet().toArray(billNames);
 
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("state");
-        //        createNodes(root, selectedState);
         directories = new JTree(root);
         directories.setPreferredSize(new Dimension(200, 500));
         directories.addTreeSelectionListener(this);
@@ -140,15 +139,8 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         billsViewer.setPreferredSize(new Dimension(400, 300));
         billsViewer.setMargin(new Insets(5, 5, 5, 5));
         billsViewer.setEditable(false);
-        //        try {
-        //            billsViewer.setPage(fileNameToURL.get(directories.getSelectedValue()).get(0));
-        //        } catch (IOException e) {
-        //            log.append("Invalid URL." + newline);
-        //            if(debug) e.printStackTrace();
-        //        }
+
         JScrollPane billsViewerScrollPane = new JScrollPane(billsViewer);
-        //        billsViewerScrollPane.setPreferredSize(new Dimension(200, 150));
-        //        JSplitPane billsViewerSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, directoriesScrollPane, billsViewerScrollPane);
 
         tabPane.addTab("Bills", billsViewerScrollPane);
 
@@ -159,20 +151,6 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         //Add the buttons and the log to this panel.
         add(buttonPanel, BorderLayout.PAGE_START);
         add(masterSplitPane, BorderLayout.LINE_START);  
-    }
-
-    /**
-     * Generates and applies the appropriate children to the root node.
-     * @param root the root node of the tree
-     * @param dir the selected state File
-     */
-    private void createNodes(DefaultMutableTreeNode root, File dir) {
-        for(File assembly : dir.listFiles()) {
-            DefaultMutableTreeNode assemblyNode = new DefaultMutableTreeNode(assembly);
-            for(File bill : assembly.listFiles())
-                assemblyNode.add(new DefaultMutableTreeNode(bill));
-            root.add(assemblyNode);
-        }
     }
 
     /**
@@ -190,6 +168,7 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         });
     }
 
+    
     /**
      * Create the GUI and show it.  For thread safety,
      * this method should be invoked from the
@@ -210,6 +189,7 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         frame.setVisible(true);
     }
 
+    
     @Override
     public void actionPerformed(ActionEvent e) {
         //Handle open button action.
@@ -218,9 +198,9 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
 
             if(returnVal == JFileChooser.APPROVE_OPTION) {
                 masterDir = fc.getSelectedFile();
-                //This is where a real application would open the file.
                 log.append("Opening: " + masterDir.getName() + "." + newline);
-
+                
+                //Populate states list:
                 DefaultListModel<String> model = new DefaultListModel<String>();
                 for(String fileName : masterDir.list())
                     model.addElement(fileName);
@@ -231,9 +211,8 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
                 stateList.setSelectionModel(listSel);
                 stateList.setSelectedIndex(0);
                 selectedStateJsonDir = new File(new File(new File(new File(masterDir, stateList.getSelectedValue()), "json"), "bills"), stateList.getSelectedValue().toLowerCase());
-
-//                DefaultMutableTreeNode root = new DefaultMutableTreeNode("state");
-//                directories.setModel(createModel(root, selectedStateJsonDir));
+                
+                //Populate directories for default state:
                 directories.setModel(new MyTreeModel(new FileTreeNode(selectedStateJsonDir, stateList.getSelectedValue())));
             } 
             else {
@@ -242,17 +221,6 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
             }
         }
     }        
-
-    private TreeModel createModel(DefaultMutableTreeNode root, File dir) {
-        TreeModel newModel = new DefaultTreeModel(root);
-        for(File assembly : dir.listFiles()) {
-            DefaultMutableTreeNode assemblyNode = new DefaultMutableTreeNode(assembly);
-            for(File bill : assembly.listFiles())
-                assemblyNode.add(new DefaultMutableTreeNode(bill));
-            root.add(assemblyNode);
-        }
-        return newModel;
-    }
 
     public HashMap<String, ArrayList<String>> loadPickle(String pickle) {
         HashMap<String, ArrayList<String>> pickleMap = new HashMap<String, ArrayList<String>>();
@@ -282,7 +250,6 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
             ArrayList<String> countryArrList = new ArrayList<String>(countryList);
             pickleMap.put(appId, countryArrList);
         }
-        //        System.out.println(idToCountries.toString());
         return pickleMap;
     }
 
