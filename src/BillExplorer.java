@@ -15,17 +15,21 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JEditorPane;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.JTree;
 import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
@@ -60,7 +64,14 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
     static File selectedStateJsonDir;
     JTextArea jsonViewer;
     JTabbedPane tabPane;
-
+    static JButton searchButton;
+    
+    static ButtonGroup searchTypeRadioGroup;
+    static JRadioButton documentSearch;
+    static JRadioButton assemblySearch;
+    static JRadioButton stateSearch;
+    static JRadioButton nationalSearch;
+    
     static HashMap<String, ArrayList<String>> directoryToURL;
     static HashMap<String, ArrayList<String>> fileNameToURL;
 
@@ -145,7 +156,7 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
     private void populateTabPane() {
         //Create JSON module:
         jsonViewer = new JTextArea(30, 40);
-        jsonViewer.setPreferredSize(new Dimension(800, 300));
+        jsonViewer.setPreferredSize(new Dimension(400, 300));
         jsonViewer.setMargin(new Insets(5, 5, 5, 5));
         jsonViewer.setEditable(false);
         JScrollPane jsonViewerScrollPane = new JScrollPane(jsonViewer);
@@ -160,6 +171,42 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         JScrollPane billsViewerScrollPane = new JScrollPane(billsViewer);
         tabPane.addTab("Bills", billsViewerScrollPane);
 
+        //Create text module:
+        JTextArea textViewer = new JTextArea(30, 40);
+        textViewer.setPreferredSize(new Dimension(400, 300));
+        textViewer.setMargin(new Insets(5, 5, 5, 5));
+        textViewer.setEditable(false);
+        JScrollPane textViewerScrollPane = new JScrollPane(textViewer);
+        tabPane.addTab("Text", textViewerScrollPane);
+        
+        //Create search module:
+        JPanel searchModule = new JPanel();
+        searchModule.add(new JLabel("Search: "));
+        
+        JTextField searchBar = new JTextField(20);
+        searchModule.add(searchBar);
+        
+        searchButton = new JButton("Search");
+        searchButton.addActionListener(this);
+        searchModule.add(searchButton);
+        
+        searchTypeRadioGroup = new ButtonGroup();
+        documentSearch = new JRadioButton("Document");
+        documentSearch.setSelected(true);
+        assemblySearch = new JRadioButton("Assembly");
+        stateSearch = new JRadioButton("State");
+        nationalSearch = new JRadioButton("Nation");
+        searchTypeRadioGroup.add(documentSearch);
+        searchTypeRadioGroup.add(assemblySearch);
+        searchTypeRadioGroup.add(stateSearch);
+        searchTypeRadioGroup.add(nationalSearch);
+        
+        searchModule.add(documentSearch);
+        searchModule.add(assemblySearch);
+        searchModule.add(stateSearch);
+        searchModule.add(nationalSearch);
+        
+        tabPane.addTab("Search", searchModule);
     }
 
     /**
@@ -226,6 +273,9 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
                 log.append("Open command cancelled by user." + newline);
                 log.setCaretPosition(log.getDocument().getLength());
             }
+        }
+        else if(e.getSource() == searchButton) {
+            
         }
     }        
 
