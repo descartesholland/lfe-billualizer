@@ -14,8 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
+import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
-import javax.swing.DefaultListSelectionModel;
 import javax.swing.JButton;
 import javax.swing.JEditorPane;
 import javax.swing.JFileChooser;
@@ -48,20 +48,21 @@ import org.python.modules.cPickle;
  *
  */
 public class BillExplorer extends JPanel implements ActionListener, TreeSelectionListener, ListSelectionListener {
-    boolean debug = false;
+    static boolean debug = false;
 
     private static final long serialVersionUID = -2714378087612244399L;
-    JButton openButton;
-    JTextArea log;
+    static JButton openButton;
+    static JTextArea log;
     JFileChooser fc;
-    JList<String> stateList;
-    JTree directories;
+    static JList<String> stateList;
+    static JTree directories;
     JEditorPane billsViewer;
-    File selectedStateJsonDir;
+    static File selectedStateJsonDir;
     JTextArea jsonViewer;
+    JTabbedPane tabPane;
 
-    HashMap<String, ArrayList<String>> directoryToURL;
-    HashMap<String, ArrayList<String>> fileNameToURL;
+    static HashMap<String, ArrayList<String>> directoryToURL;
+    static HashMap<String, ArrayList<String>> fileNameToURL;
 
     final static String newline = "\n";
 
@@ -91,47 +92,58 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         //Initialize file browser
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("state");
         directories = new JTree(root);
-        directories.setPreferredSize(new Dimension(200, 500));
+        directories.setPreferredSize(new Dimension(200, 300));
         directories.addTreeSelectionListener(this);
 
         JScrollPane directoriesScrollPane = new JScrollPane(directories);
         directoriesScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
-        directoriesScrollPane.setPreferredSize(new Dimension(200, 500));
+        directoriesScrollPane.setPreferredSize(new Dimension(200, 300));
 
         //Left pane:
         JSplitPane leftSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, directoriesScrollPane, logScrollPane);
         leftSplitPane.setDividerLocation(350);
         logScrollPane.setMinimumSize(new Dimension(100, 100));
 
-        //Bill explorer:
-        directoryToURL = loadPickle("json_to_url_dict.p");
-        fileNameToURL = new HashMap<String, ArrayList<String>>();
-        for(String key : directoryToURL.keySet()) {
-            try {
-                fileNameToURL.put(key.substring(key.lastIndexOf('/')+1), directoryToURL.get(key));
-            }
-            catch(IndexOutOfBoundsException e) {
-                log.append("Non-json file \"" + key + "\" detected" + newline);
-                if(debug) e.printStackTrace();
-            }
-        }
-        String[] billNames = new String[fileNameToURL.keySet().size()];
-        fileNameToURL.keySet().toArray(billNames);
-
         //State list:
         stateList = new JList<String>(new String[1]);
         stateList.addListSelectionListener(this);
         stateList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         stateList.setLayoutOrientation(JList.VERTICAL_WRAP);
-        stateList.setPreferredSize(new Dimension(600, 50));
+        stateList.setPreferredSize(new Dimension(200, 30));
+        stateList.setMaximumSize(new Dimension(600, 30));
+        stateList.setVisibleRowCount(1);
         JScrollPane stateListScrollPane = new JScrollPane(stateList);
-        stateListScrollPane.setPreferredSize(new Dimension(100, 50));
+        stateListScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
+        stateListScrollPane.setPreferredSize(new Dimension(100, 30));
+        stateListScrollPane.setMaximumSize(new Dimension(650, 30));
 
-        //Main pane tabs:
-        JTabbedPane tabPane = new JTabbedPane();
+        //Set up tab pane:
+        tabPane = new JTabbedPane();
         tabPane.setMinimumSize(new Dimension(200, 400));
-        tabPane.setPreferredSize(new Dimension(800, 500));
+        tabPane.setPreferredSize(new Dimension(650, 400));
+        populateTabPane();
+        //        JSplitPane centerSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, stateListScrollPane, tabPane);
+        //        centerSplitPane.setDividerLocation(30);
 
+        JPanel centerPanel = new JPanel();
+        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.PAGE_AXIS));
+        centerPanel.add(stateListScrollPane);
+        centerPanel.add(tabPane);
+
+        JSplitPane masterSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftSplitPane, centerPanel);
+        masterSplitPane.setDividerLocation(200);
+
+        //Add the buttons and the log to this panel.
+        add(buttonPanel, BorderLayout.PAGE_START);
+        add(masterSplitPane, BorderLayout.LINE_START);  
+    }
+
+    /**
+     * Removes all tabs from tabPane and generates each of them again
+     * programmatically.
+     */
+    private void populateTabPane() {
+        //Create JSON module:
         jsonViewer = new JTextArea(30, 40);
         jsonViewer.setPreferredSize(new Dimension(800, 300));
         jsonViewer.setMargin(new Insets(5, 5, 5, 5));
@@ -146,17 +158,8 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         billsViewer.setMargin(new Insets(5, 5, 5, 5));
         billsViewer.setEditable(false);
         JScrollPane billsViewerScrollPane = new JScrollPane(billsViewer);
-
         tabPane.addTab("Bills", billsViewerScrollPane);
 
-        JSplitPane centerSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, stateListScrollPane, tabPane);
-        centerSplitPane.setDividerLocation(50);
-
-        JSplitPane masterSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftSplitPane, centerSplitPane);
-        masterSplitPane.setDividerLocation(200);
-        //Add the buttons and the log to this panel.
-        add(buttonPanel, BorderLayout.PAGE_START);
-        add(masterSplitPane, BorderLayout.LINE_START);  
     }
 
     /**
@@ -189,7 +192,7 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         frame.add(new BillExplorer());
 
         //Display the window.
-        frame.setPreferredSize(new Dimension(1000, 600));
+        //        frame.setPreferredSize(new Dimension(1000, 400));
 
         frame.pack();
         frame.setVisible(true);
@@ -226,14 +229,13 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         }
     }        
 
-    public HashMap<String, ArrayList<String>> loadPickle(String pickle) {
+    public static HashMap<String, ArrayList<String>> loadPickle(File pickle) {
         HashMap<String, ArrayList<String>> pickleMap = new HashMap<String, ArrayList<String>>();
-        File f = new File(System.getProperty("user.dir") + "//assets//" + pickle);
-        log.append("Loading pickle of length " + f.length() + newline);
+        log.append("Loading pickle " + pickle.getPath() + " of length " + pickle.length() + newline);
         BufferedReader bufR;
         StringBuilder strBuilder = new StringBuilder();
         try {
-            bufR = new BufferedReader(new FileReader(f));
+            bufR = new BufferedReader(new FileReader(pickle));
             String aLine;
             while (null != (aLine = bufR.readLine())) {
                 strBuilder.append(aLine).append(newline);
@@ -261,6 +263,7 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
     public void valueChanged(TreeSelectionEvent arg0) {
         if(arg0.getSource() == directories) {
             try {
+                log.append("Looking for: " + ((FileTreeNode) directories.getSelectionPath().getLastPathComponent()).getTitle() + newline);
                 billsViewer.setPage(fileNameToURL.get( ((FileTreeNode) directories.getSelectionPath().getLastPathComponent()).getTitle()).get(0));
             } catch (IOException e) {
                 log.append("Invalid URL." + newline);
@@ -294,9 +297,10 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
     @Override
     public void valueChanged(ListSelectionEvent e) {
         //Handle state switching:
-        if(e.getSource() == stateList) {
-            selectedStateJsonDir = new File(new File(new File(new File(masterDir, stateList.getSelectedValue()), "json"), "bills"), stateList.getSelectedValue().toLowerCase());
-            directories.setModel(new MyTreeModel(new FileTreeNode(selectedStateJsonDir, stateList.getSelectedValue())));
+        if(e.getSource() == stateList && e.getFirstIndex() != e.getLastIndex()) {
+            log.append("Loading..." + newline);
+            
+            new DirectoriesSwingWorker().execute();
         }
     }
 }
