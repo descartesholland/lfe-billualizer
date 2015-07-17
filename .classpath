@@ -1,15 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry exported="true" kind="lib" path="libs/lucene-core-5.2.1.jar">
-		<attributes>
-			<attribute name="javadoc_location" value="file:/C:/Users/android/workspace4-4/Billualizer2/libs/core/"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="libs/apache-lucene.jar"/>
+	<classpathentry kind="lib" path="libs/solr-solrj-4.0.0.jar"/>
+	<classpathentry kind="lib" path="libs/solr-solrj-5.2.1.jar"/>
+	<classpathentry kind="lib" path="libs/tika/tika-app-1.9.jar" sourcepath="C:/Users/android/Documents/tika-1.9/tika-app/src"/>
+	<classpathentry kind="lib" path="libs/tika/tika-bundle-1.9.jar"/>
+	<classpathentry kind="lib" path="libs/tika/tika-core-1.9.jar"/>
+	<classpathentry kind="lib" path="libs/tika/tika-parsers-1.9.jar"/>
+	<classpathentry kind="lib" path="libs/tika/tika-server-1.9.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
 	<classpathentry kind="lib" path="libs/jython-standalone-2.7.0.jar"/>
-	<classpathentry exported="true" kind="lib" path="C:/Users/android/Downloads/lucene-5.2.1/analysis/common/lucene-analyzers-common-5.2.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="C:/Users/android/Downloads/lucene-5.2.1/analysis/icu/lucene-analyzers-icu-5.2.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

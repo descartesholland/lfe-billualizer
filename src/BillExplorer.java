@@ -55,6 +55,8 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
     static boolean debug = false;
 
     private static final long serialVersionUID = -2714378087612244399L;
+    private static final String SOLR_URL = "http://localhost:8983/solr/";
+    
     static JButton openButton;
     static JTextArea log;
     JFileChooser fc;
@@ -65,6 +67,7 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
     JTextArea jsonViewer;
     JTabbedPane tabPane;
     static JButton searchButton;
+    static JButton indexButton;
     
     static ButtonGroup searchTypeRadioGroup;
     static JRadioButton documentSearch;
@@ -276,6 +279,9 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         }
         else if(e.getSource() == searchButton) {
             
+        }
+        else if(e.getSource() == indexButton) {
+            SolrInteractor interactor = new SolrInteractor(SOLR_URL);
         }
     }        
 
