@@ -99,7 +99,8 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         log.setMargin(new Insets(5,5,5,5));
         log.setEditable(false);
         JScrollPane logScrollPane = new JScrollPane(log);
-
+        logScrollPane.setAutoscrolls(true);
+        
         //Create a file chooser
         fc = new JFileChooser();
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -114,16 +115,20 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         //Initialize file browser
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("state");
         directories = new JTree(root);
-        directories.setPreferredSize(new Dimension(200, 150));
+//        directories.setPreferredSize(new Dimension(200, 150));
+//        directories.setMaximumSize(new Dimension(250, 200));
         directories.addTreeSelectionListener(this);
-
-        JScrollPane directoriesScrollPane = new JScrollPane(directories);
+        directories.setVisibleRowCount(3);
+            JScrollPane directoriesScrollPane = new JScrollPane(directories);
         directoriesScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
-        directoriesScrollPane.setPreferredSize(new Dimension(200, 150));
+        directoriesScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+//        directoriesScrollPane.setPreferredSize(new Dimension(200, 150));
+//        directoriesScrollPane.setMaximumSize(new Dimension(250, 200));
+        directoriesScrollPane.setViewportView(directories);
 
         //Left pane:
         JSplitPane leftSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, directoriesScrollPane, logScrollPane);
-        leftSplitPane.setDividerLocation(350);
+        leftSplitPane.setDividerLocation(150);
         logScrollPane.setMinimumSize(new Dimension(100, 100));
 
         //State list:
@@ -292,18 +297,18 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         else if(e.getSource() == searchButton) {
             String searchText = searchBar.getText();
             SolrInteractor interactor = new SolrInteractor(SOLR_URL);
-            
+
             List<BasicNameValuePair> params = new ArrayList<BasicNameValuePair>();
-            if(searchTypeRadioGroup.getSelection() != nationalSearch) {
+            if(! nationalSearch.isSelected()) {
                 params.add(new BasicNameValuePair("state", stateList.getSelectedValue()));
-                if(searchTypeRadioGroup.getSelection() != stateSearch) {
+                if(! stateSearch.isSelected()) {
                     params.add(new BasicNameValuePair("assembly", selectedAssemblyName));
-                    if(searchTypeRadioGroup.getSelection() != assemblySearch) {
+                    if(! assemblySearch.isSelected()) {
                         params.add(new BasicNameValuePair("title", selectedDocumentName));
                     }
                 }
             }
-            
+
             try {
                 List<SolrDocument> results = interactor.query(searchText, params);
                 List<String> states = new ArrayList<String>();
@@ -313,14 +318,20 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
                         states.add((String) doc.getFieldValue("state"));
                     titles.add((String) doc.getFieldValue("title"));
                 }
+                System.out.println(titles);
                 log.append("Found " + titles.size() + " match(es) in " + states.size() + " state(s)." + newline); 
             } catch (SolrServerException | IOException e1) {
                 if(debug) e1.printStackTrace();
             }
         }
         else if(e.getSource() == indexButton) {
-            SolrInteractor interactor = new SolrInteractor(SOLR_URL);
-            interactor.indexState(new File(masterDir, stateList.getSelectedValue()));
+            new Thread() {
+                @Override
+                public void run() {
+                    SolrInteractor interactor = new SolrInteractor(SOLR_URL);
+                    interactor.indexState(new File(masterDir, stateList.getSelectedValue()));
+                }
+            }.start();
         }
     }        
 
@@ -353,7 +364,7 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         }
         return pickleMap;
     }
-    
+
     public static HashMap<String, String> loadPickleString(File pickle) {
         HashMap<String, String> pickleMap = new HashMap<String, String>();
         log.append("Loading pickle " + pickle.getPath() + " of length " + pickle.length() + newline);

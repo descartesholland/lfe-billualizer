@@ -60,6 +60,8 @@ public class SolrInteractor {
                             String fileName = urlToFileName.get(urls.get(urls.size() - 1));
 
                             String content = tika.parseToString(TikaInputStream.get(new File(stateDirectory, fileName), new Metadata()));
+                            content = content.replace("\n\n", "");
+                            content = content.replace("  ", " ");
                             doc.addField("doctext_txt_en", content);
                         } catch (IOException e) {
                             failures.add(f.getAbsolutePath().substring(BillExplorer.masterDir.getAbsolutePath().length()));
@@ -99,6 +101,7 @@ public class SolrInteractor {
             if(BillExplorer.debug) e.printStackTrace();
         } 
         BillExplorer.log.append("Finished indexing state" + newline);
+        System.out.println("Failures: " + failures);
         return "Success";
     }
 
@@ -114,12 +117,12 @@ public class SolrInteractor {
     public List<SolrDocument> query(String text, List<BasicNameValuePair> scope) throws SolrServerException, IOException {
         List<SolrDocument> ans = new ArrayList<SolrDocument>();
         SolrQuery query = new SolrQuery();
-        query.setQuery(text);
-        query.setFields("id", "title", "text");
+        query = query.setQuery(text);
+        query = query.setFields("id", "title", "doctext_txt_en");
         for(BasicNameValuePair param : scope)
-            query.addFilterQuery(param.getName() + ":" + param.getValue());
-        query.setStart(0);
-
+            query = query.addFilterQuery(param.getName() + ":" + "\"" + param.getValue() + "\"");
+        query = query.setStart(0);
+        query = query.setRows(Integer.MAX_VALUE);
         BillExplorer.log.append("Querying for: " + text + newline);
 
         QueryResponse response = solr.query(query);
