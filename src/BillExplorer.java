@@ -40,7 +40,11 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreePath;
 
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.SolrDocument;
 import org.python.core.PyDictionary;
 import org.python.core.PyList;
 import org.python.core.PyObject;
@@ -52,11 +56,11 @@ import org.python.modules.cPickle;
  *
  */
 public class BillExplorer extends JPanel implements ActionListener, TreeSelectionListener, ListSelectionListener {
-    static boolean debug = false;
+    static boolean debug = true;
 
     private static final long serialVersionUID = -2714378087612244399L;
-    private static final String SOLR_URL = "http://localhost:8983/solr/";
-    
+    private static final String SOLR_URL = "http://localhost:8983/solr/Billualizer";
+
     static JButton openButton;
     static JTextArea log;
     JFileChooser fc;
@@ -68,17 +72,21 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
     JTabbedPane tabPane;
     static JButton searchButton;
     static JButton indexButton;
-    
+
+    static JTextField searchBar;
     static ButtonGroup searchTypeRadioGroup;
     static JRadioButton documentSearch;
     static JRadioButton assemblySearch;
     static JRadioButton stateSearch;
     static JRadioButton nationalSearch;
-    
+
     static HashMap<String, ArrayList<String>> directoryToURL;
     static HashMap<String, ArrayList<String>> fileNameToURL;
 
     final static String newline = "\n";
+    static String selectedAssemblyName;
+    static String selectedHouseName;
+    static String selectedDocumentName;
 
     static File masterDir;
 
@@ -106,12 +114,12 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         //Initialize file browser
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("state");
         directories = new JTree(root);
-        directories.setPreferredSize(new Dimension(200, 300));
+        directories.setPreferredSize(new Dimension(200, 150));
         directories.addTreeSelectionListener(this);
 
         JScrollPane directoriesScrollPane = new JScrollPane(directories);
         directoriesScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
-        directoriesScrollPane.setPreferredSize(new Dimension(200, 300));
+        directoriesScrollPane.setPreferredSize(new Dimension(200, 150));
 
         //Left pane:
         JSplitPane leftSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, directoriesScrollPane, logScrollPane);
@@ -181,18 +189,22 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         textViewer.setEditable(false);
         JScrollPane textViewerScrollPane = new JScrollPane(textViewer);
         tabPane.addTab("Text", textViewerScrollPane);
-        
+
         //Create search module:
         JPanel searchModule = new JPanel();
+        indexButton = new JButton("Index State");
+        indexButton.addActionListener(this);
+        searchModule.add(indexButton);
+
         searchModule.add(new JLabel("Search: "));
-        
-        JTextField searchBar = new JTextField(20);
+
+        searchBar = new JTextField(20);
         searchModule.add(searchBar);
-        
+
         searchButton = new JButton("Search");
         searchButton.addActionListener(this);
         searchModule.add(searchButton);
-        
+
         searchTypeRadioGroup = new ButtonGroup();
         documentSearch = new JRadioButton("Document");
         documentSearch.setSelected(true);
@@ -203,12 +215,12 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         searchTypeRadioGroup.add(assemblySearch);
         searchTypeRadioGroup.add(stateSearch);
         searchTypeRadioGroup.add(nationalSearch);
-        
+
         searchModule.add(documentSearch);
         searchModule.add(assemblySearch);
         searchModule.add(stateSearch);
         searchModule.add(nationalSearch);
-        
+
         tabPane.addTab("Search", searchModule);
     }
 
@@ -278,14 +290,41 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
             }
         }
         else if(e.getSource() == searchButton) {
+            String searchText = searchBar.getText();
+            SolrInteractor interactor = new SolrInteractor(SOLR_URL);
             
+            List<BasicNameValuePair> params = new ArrayList<BasicNameValuePair>();
+            if(searchTypeRadioGroup.getSelection() != nationalSearch) {
+                params.add(new BasicNameValuePair("state", stateList.getSelectedValue()));
+                if(searchTypeRadioGroup.getSelection() != stateSearch) {
+                    params.add(new BasicNameValuePair("assembly", selectedAssemblyName));
+                    if(searchTypeRadioGroup.getSelection() != assemblySearch) {
+                        params.add(new BasicNameValuePair("title", selectedDocumentName));
+                    }
+                }
+            }
+            
+            try {
+                List<SolrDocument> results = interactor.query(searchText, params);
+                List<String> states = new ArrayList<String>();
+                List<String> titles = new ArrayList<String>();
+                for(SolrDocument doc : results) {
+                    if(!states.contains(doc.get("state")))
+                        states.add((String) doc.getFieldValue("state"));
+                    titles.add((String) doc.getFieldValue("title"));
+                }
+                log.append("Found " + titles.size() + " match(es) in " + states.size() + " state(s)." + newline); 
+            } catch (SolrServerException | IOException e1) {
+                if(debug) e1.printStackTrace();
+            }
         }
         else if(e.getSource() == indexButton) {
             SolrInteractor interactor = new SolrInteractor(SOLR_URL);
+            interactor.indexState(new File(masterDir, stateList.getSelectedValue()));
         }
     }        
 
-    public static HashMap<String, ArrayList<String>> loadPickle(File pickle) {
+    public static HashMap<String, ArrayList<String>> loadPickleList(File pickle) {
         HashMap<String, ArrayList<String>> pickleMap = new HashMap<String, ArrayList<String>>();
         log.append("Loading pickle " + pickle.getPath() + " of length " + pickle.length() + newline);
         BufferedReader bufR;
@@ -314,22 +353,54 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         }
         return pickleMap;
     }
+    
+    public static HashMap<String, String> loadPickleString(File pickle) {
+        HashMap<String, String> pickleMap = new HashMap<String, String>();
+        log.append("Loading pickle " + pickle.getPath() + " of length " + pickle.length() + newline);
+        BufferedReader bufR;
+        StringBuilder strBuilder = new StringBuilder();
+        try {
+            bufR = new BufferedReader(new FileReader(pickle));
+            String aLine;
+            while (null != (aLine = bufR.readLine())) {
+                strBuilder.append(aLine).append(newline);
+            }
+            bufR.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        PyString pyStr = new PyString(strBuilder.toString());
+        PyDictionary idToCountriesObj =  (PyDictionary) cPickle.loads(pyStr);
+        ConcurrentMap<PyObject, PyObject> aMap = idToCountriesObj.getMap();
+        for (Map.Entry<PyObject, PyObject> entry : aMap.entrySet()) {
+            String appId = entry.getKey().toString();
+            PyString countryIdList = (PyString) entry.getValue();
+            pickleMap.put(appId, countryIdList.asString());
+        }
+        return pickleMap;
+    }
 
     @Override
     public void valueChanged(TreeSelectionEvent arg0) {
         if(arg0.getSource() == directories) {
-            try {
-                log.append("Looking for: " + ((FileTreeNode) directories.getSelectionPath().getLastPathComponent()).getTitle() + newline);
-                billsViewer.setPage(fileNameToURL.get( ((FileTreeNode) directories.getSelectionPath().getLastPathComponent()).getTitle()).get(0));
-            } catch (IOException e) {
-                log.append("Invalid URL." + newline);
-                if(debug) e.printStackTrace();
-            } catch (NullPointerException e) {
-                log.append("NPE. Check connectivity." + newline);
-                if(debug) e.printStackTrace();
-            }
+            updatePath(arg0);
 
+            //Update tabs:
             if(((FileTreeNode) arg0.getPath().getLastPathComponent()).isLeaf()) {
+                try {
+                    log.append("Looking for: " + ((FileTreeNode) directories.getSelectionPath().getLastPathComponent()).getTitle() + newline);
+                    ArrayList<String> versions = fileNameToURL.get( ((FileTreeNode) directories.getSelectionPath().getLastPathComponent()).getTitle());
+                    billsViewer.setPage(versions.get(versions.size()-1));
+                } catch (IOException e) {
+                    log.append("Invalid URL." + newline);
+                    if(debug) e.printStackTrace();
+                } catch (NullPointerException e) {
+                    log.append("NPE. Check connectivity." + newline);
+                    if(debug) e.printStackTrace();
+                }
+
                 try {
                     File json = ((FileTreeNode) arg0.getPath().getLastPathComponent()).getFile();
                     BufferedReader jsonReader = new BufferedReader(new FileReader(json));
@@ -350,12 +421,34 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         }
     }
 
+    /**
+     * Updates the 'currently selected' fields with a new TreeSelectionEvent
+     * @param e the TreeSelectionEvent which triggered the update
+     */
+    public void updatePath(TreeSelectionEvent e) {
+        TreePath path = e.getPath();
+        if(path.getPathCount() == 4) {
+            selectedDocumentName = path.getLastPathComponent().toString();
+            path = path.getParentPath();
+            if(debug) System.out.println("Selected Document Name: " + selectedDocumentName);
+        }
+        if(path.getPathCount() == 3) {
+            selectedHouseName = path.getLastPathComponent().toString();
+            path = path.getParentPath();
+            if(debug) System.out.println("Selected House Name: " + selectedHouseName);
+        }
+        if(path.getPathCount() == 2) {
+            selectedAssemblyName = path.getLastPathComponent().toString();
+            if(debug) System.out.println("Selected Assembly Name: " + selectedAssemblyName);
+        }
+    }
+
     @Override
     public void valueChanged(ListSelectionEvent e) {
         //Handle state switching:
         if(e.getSource() == stateList && e.getFirstIndex() != e.getLastIndex()) {
             log.append("Loading..." + newline);
-            
+
             new DirectoriesSwingWorker().execute();
         }
     }

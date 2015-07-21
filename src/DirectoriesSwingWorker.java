@@ -15,7 +15,7 @@ public class DirectoriesSwingWorker extends SwingWorker<MyTreeModel, Object> {
     @Override
     protected MyTreeModel doInBackground() throws Exception {
       //Perform some computation/loading:
-        BillExplorer.directoryToURL = BillExplorer.loadPickle(new File(new File(new File(BillExplorer.masterDir, BillExplorer.stateList.getSelectedValue()), "hashes"), "json_to_url_dict.p"));
+        BillExplorer.directoryToURL = BillExplorer.loadPickleList(new File(new File(new File(BillExplorer.masterDir, BillExplorer.stateList.getSelectedValue()), "hashes"), "json_to_url_dict.p"));
         BillExplorer.fileNameToURL = new HashMap<String, ArrayList<String>>();
         for(String key : BillExplorer.directoryToURL.keySet()) {
             try {
