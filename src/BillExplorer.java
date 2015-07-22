@@ -146,8 +146,6 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         tabPane.setMinimumSize(new Dimension(200, 200));
         tabPane.setPreferredSize(new Dimension(400, 500));
         populateTabPane();
-        //        JSplitPane centerSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, stateListScrollPane, tabPane);
-        //        centerSplitPane.setDividerLocation(30);
 
         JPanel centerPanel = new JPanel();
         centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.PAGE_AXIS));
@@ -265,8 +263,6 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         frame.add(new BillExplorer());
 
         //Display the window.
-        //        frame.setPreferredSize(new Dimension(1000, 400));
-
         frame.pack();
         frame.setVisible(true);
     }
@@ -409,10 +405,7 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
             if(((FileTreeNode) arg0.getPath().getLastPathComponent()).isLeaf()) {
                 try {
                     log.append("Looking for: " + ((FileTreeNode) directories.getSelectionPath().getLastPathComponent()).getTitle() + newline);
-                    System.out.println(buildFileFromTreePath(directories.getSelectionPath()));
-//                    System.out.println(directoryToURL);
                     ArrayList<String> versions = directoryToURL.get(buildFileFromTreePath(directories.getSelectionPath()));
-                            //fileNameToURL.get( ((FileTreeNode) directories.getSelectionPath().getLastPathComponent()).getTitle());
                     billsViewer.setPage(versions.get(versions.size()-1));
                 } catch (IOException e) {
                     log.append("Invalid URL." + newline);
