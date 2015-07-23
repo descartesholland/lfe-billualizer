@@ -69,6 +69,8 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
     private static final long serialVersionUID = -2714378087612244399L;
     private static final String SOLR_URL = "http://localhost:8983/solr/Billualizer";
 
+    
+    final static File SHAPE_FILE = new File(new File(new File(System.getProperty("user.dir"), "assets"), "states_shp"), "states.shp");
     static JButton openButton;
     static JTextArea log;
     JFileChooser fc;
@@ -237,6 +239,28 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         searchModule.add(stateSearch);
         searchModule.add(nationalSearch);
 
+        FileDataStore store;
+        try {
+            store = FileDataStoreFinder.getDataStore(SHAPE_FILE);
+
+            SimpleFeatureSource featureSource = store.getFeatureSource();
+
+            // Create a map content and add our shapefile to it
+            MapContent map = new MapContent();
+            map.setTitle("Quickstart");
+
+            Style style = SLD.createSimpleStyle(featureSource.getSchema());
+            Layer layer = new FeatureLayer(featureSource, style);
+            map.addLayer(layer);
+
+            // Now display the map
+//            JMapFrame.showMap(map);
+            JMapFrame mapFrame = new JMapFrame(map);
+            searchModule.add(mapFrame);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         tabPane.addTab("Search", searchModule);
     }
 
@@ -260,26 +284,7 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
             return;
         }
 
-        FileDataStore store;
-        try {
-            store = FileDataStoreFinder.getDataStore(file);
-
-            SimpleFeatureSource featureSource = store.getFeatureSource();
-
-            // Create a map content and add our shapefile to it
-            MapContent map = new MapContent();
-            map.setTitle("Quickstart");
-
-            Style style = SLD.createSimpleStyle(featureSource.getSchema());
-            Layer layer = new FeatureLayer(featureSource, style);
-            map.addLayer(layer);
-
-            // Now display the map
-            JMapFrame.showMap(map);
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        
     }
 
     /**

@@ -24,6 +24,7 @@ import org.geotools.styling.StyleFactory;
 import org.geotools.swing.JMapFrame;
 import org.geotools.swing.data.JFileDataStoreChooser;
 import org.geotools.swing.styling.JSimpleStyleDialog;
+import org.junit.runner.manipulation.Filter;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.filter.FilterFactory;
 
@@ -153,6 +154,8 @@ public class Mappa {
         PolygonSymbolizer sym = styleFactory.createPolygonSymbolizer(stroke, fill, null);
         Rule rule = styleFactory.createRule();
         rule.symbolizers().add(sym);
+        org.opengis.filter.Filter filter = new IncludeFilter();
+        rule.setFilter(filter);
         FeatureTypeStyle fts = styleFactory.createFeatureTypeStyle(new Rule[]{rule});
         Style style = styleFactory.createStyle();
         style.featureTypeStyles().add(fts);
