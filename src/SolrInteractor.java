@@ -10,7 +10,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
@@ -22,8 +21,9 @@ import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 
 
+@SuppressWarnings("deprecation")
 public class SolrInteractor {
-    final static String newline = "\n";
+    final static String newline = "";
     private String urlString;
     private SolrClient solr;
     private Tika tika;
@@ -77,21 +77,21 @@ public class SolrInteractor {
                             UpdateResponse response = solr.add(doc);
                             if(response.getStatus() != 0 && response.getStatus() != 200) 
                                 BillExplorer.log.append("Response status code: " + response.getStatus() + " header: " + response.getResponseHeader() + newline);
-                        } catch(IOException | SolrServerException e) {
+                        } catch(Exception e){ /// | SolrServerException e) {
                             failures.add(f.getAbsolutePath().substring(BillExplorer.masterDir.getAbsolutePath().length()));
                             BillExplorer.log.append("Error occurred while adding document." + json.getAbsolutePath() + newline);
                             if(BillExplorer.debug) e.printStackTrace();
-                        } catch(RemoteSolrException e) {
-                            failures.add(f.getAbsolutePath().substring(BillExplorer.masterDir.getAbsolutePath().length()));
-                            BillExplorer.log.append("Remote Exception adding document " + f.getName() + newline);
-                            if(BillExplorer.debug) e.printStackTrace();
-                        }
+                        }// catch(RemoteSolrException e) {
+//                            failures.add(f.getAbsolutePath().substring(BillExplorer.masterDir.getAbsolutePath().length()));
+//                            BillExplorer.log.append("Remote Exception adding document " + f.getName() + newline);
+//                            if(BillExplorer.debug) e.printStackTrace();
+//                        }
                     }
                 }
                 try {
                     BillExplorer.log.append("Committing to solr" + newline);
                     solr.commit();
-                } catch (SolrServerException | IOException e) {
+                } catch (/*SolrServerException | */ Exception e) {
                     BillExplorer.log.append("Error occurred while commiting " + assembly.getPath() + " to server." + newline);
                     if(BillExplorer.debug) e.printStackTrace();
                 }

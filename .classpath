@@ -2,22 +2,16 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry exported="true" kind="lib" path="libs/solr-solrj-5.2.1.jar"/>
-	<classpathentry kind="lib" path="libs/tika/tika-app-1.9.jar" sourcepath="C:/Users/android/Documents/tika-1.9/tika-app/src"/>
-	<classpathentry kind="lib" path="libs/tika/tika-bundle-1.9.jar"/>
-	<classpathentry kind="lib" path="libs/tika/tika-core-1.9.jar"/>
-	<classpathentry kind="lib" path="libs/tika/tika-parsers-1.9.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/http/commons-codec-1.9.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/http/commons-logging-1.2.jar"/>
-	<classpathentry kind="lib" path="libs/http/fluent-hc-4.5.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/http/httpclient-4.5.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/http/httpclient-cache-4.5.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/http/httpclient-win-4.5.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/http/httpcore-4.4.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/http/httpmime-4.5.jar"/>
-	<classpathentry kind="lib" path="libs/http/jna-4.1.0.jar"/>
-	<classpathentry kind="lib" path="libs/http/jna-platform-4.1.0.jar"/>
-	<classpathentry kind="lib" path="libs/noggit-0.5.jar"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
 	<classpathentry kind="lib" path="libs/jython-standalone-2.7.0.jar"/>
-	<classpathentry kind="output" path="bin"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="output" path="target/classes"/>
 </classpath>

@@ -33,8 +33,6 @@ import javax.swing.JTextField;
 import javax.swing.JTree;
 import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TreeSelectionEvent;
@@ -44,8 +42,17 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreePath;
 
 import org.apache.http.message.BasicNameValuePair;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocument;
+import org.geotools.data.FileDataStore;
+import org.geotools.data.FileDataStoreFinder;
+import org.geotools.data.simple.SimpleFeatureSource;
+import org.geotools.map.FeatureLayer;
+import org.geotools.map.Layer;
+import org.geotools.map.MapContent;
+import org.geotools.styling.SLD;
+import org.geotools.styling.Style;
+import org.geotools.swing.JMapFrame;
+import org.geotools.swing.data.JFileDataStoreChooser;
 import org.python.core.PyDictionary;
 import org.python.core.PyList;
 import org.python.core.PyObject;
@@ -238,16 +245,42 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
      */
     public static void main(String[] args) {
         //Schedule a job for the event dispatch thread:
-        //creating and showing this application's GUI.
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                //Turn off metal's use of bold fonts
-                UIManager.put("swing.boldMetal", Boolean.FALSE); 
-                createAndShowGUI();
-            }
-        });
-    }
+        //        //creating and showing this application's GUI.
+        //        SwingUtilities.invokeLater(new Runnable() {
+        //            public void run() {
+        //                //Turn off metal's use of bold fonts
+        //                UIManager.put("swing.boldMetal", Boolean.FALSE); 
+        //                createAndShowGUI();
+        //            }
+        //        });
+        //    
+        // display a data store file chooser dialog for shapefiles
+        File file = JFileDataStoreChooser.showOpenFile("shp", null);
+        if (file == null) {
+            return;
+        }
 
+        FileDataStore store;
+        try {
+            store = FileDataStoreFinder.getDataStore(file);
+
+            SimpleFeatureSource featureSource = store.getFeatureSource();
+
+            // Create a map content and add our shapefile to it
+            MapContent map = new MapContent();
+            map.setTitle("Quickstart");
+
+            Style style = SLD.createSimpleStyle(featureSource.getSchema());
+            Layer layer = new FeatureLayer(featureSource, style);
+            map.addLayer(layer);
+
+            // Now display the map
+            JMapFrame.showMap(map);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
 
     /**
      * Create the GUI and show it.  For thread safety,
@@ -266,7 +299,6 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         frame.pack();
         frame.setVisible(true);
     }
-
 
     @Override
     public void actionPerformed(ActionEvent e) {
@@ -322,7 +354,7 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
                 }
                 System.out.println(titles);
                 log.append("Found " + titles.size() + " match(es) in " + states.size() + " state(s)." + newline); 
-            } catch (SolrServerException | IOException e1) {
+            } catch (/*SolrServerException | IO*/Exception e1) {
                 if(debug) e1.printStackTrace();
             }
         }
@@ -472,7 +504,7 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         int counter = 1;
         StringBuilder builder = new StringBuilder("json/bills/");
         builder.append(stateList.getSelectedValue().toLowerCase());
-        
+
         while(true) {
             try {
                 builder.append("/" + ((FileTreeNode) path.getPathComponent(counter)).toString());
