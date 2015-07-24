@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentMap;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultListModel;
+import javax.swing.GroupLayout;
 import javax.swing.JButton;
 import javax.swing.JEditorPane;
 import javax.swing.JFileChooser;
@@ -33,6 +34,8 @@ import javax.swing.JTextField;
 import javax.swing.JTree;
 import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TreeSelectionEvent;
@@ -52,6 +55,7 @@ import org.geotools.map.MapContent;
 import org.geotools.styling.SLD;
 import org.geotools.styling.Style;
 import org.geotools.swing.JMapFrame;
+import org.geotools.swing.JMapPane;
 import org.geotools.swing.data.JFileDataStoreChooser;
 import org.python.core.PyDictionary;
 import org.python.core.PyList;
@@ -69,7 +73,7 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
     private static final long serialVersionUID = -2714378087612244399L;
     private static final String SOLR_URL = "http://localhost:8983/solr/Billualizer";
 
-    
+
     final static File SHAPE_FILE = new File(new File(new File(System.getProperty("user.dir"), "assets"), "states_shp"), "states.shp");
     static JButton openButton;
     static JTextArea log;
@@ -200,7 +204,7 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         JScrollPane billsViewerScrollPane = new JScrollPane(billsViewer);
         tabPane.addTab("Bills", billsViewerScrollPane);
 
-        //Create text module:
+        //Create text tab:
         JTextArea textViewer = new JTextArea(20, 20);
         textViewer.setPreferredSize(new Dimension(200, 150));
         textViewer.setMargin(new Insets(5, 5, 5, 5));
@@ -208,20 +212,23 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         JScrollPane textViewerScrollPane = new JScrollPane(textViewer);
         tabPane.addTab("Text", textViewerScrollPane);
 
-        //Create search module:
-        JPanel searchModule = new JPanel();
+        //Create search tab:
+        JPanel searchPanel = new JPanel(new BorderLayout());
+        
+        //Create GroupLayout:
+
         indexButton = new JButton("Index State");
         indexButton.addActionListener(this);
-        searchModule.add(indexButton);
+//        searchModule.add(indexButton, BorderLayout.PAGE_START);
 
-        searchModule.add(new JLabel("Search: "));
+//        searchModule.add(new JLabel("Search: "));
 
-        searchBar = new JTextField(20);
-        searchModule.add(searchBar);
+        searchBar = new JTextField(8);
+//        searchModule.add(searchBar, BorderLayout.PAGE_START);
 
         searchButton = new JButton("Search");
         searchButton.addActionListener(this);
-        searchModule.add(searchButton);
+//        searchModule.add(searchButton, BorderLayout.PAGE_START);
 
         searchTypeRadioGroup = new ButtonGroup();
         documentSearch = new JRadioButton("Document");
@@ -234,11 +241,26 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         searchTypeRadioGroup.add(stateSearch);
         searchTypeRadioGroup.add(nationalSearch);
 
-        searchModule.add(documentSearch);
-        searchModule.add(assemblySearch);
-        searchModule.add(stateSearch);
-        searchModule.add(nationalSearch);
-
+//        searchModule.add(documentSearch, BorderLayout.PAGE_START);
+//        searchModule.add(assemblySearch, BorderLayout.PAGE_START);
+//        searchModule.add(stateSearch, BorderLayout.PAGE_START);
+//        searchModule.add(nationalSearch, BorderLayout.PAGE_START);
+        JPanel searchModule = new JPanel();
+        JLabel label = new JLabel("Search: ");
+        GroupLayout groupLayout = new GroupLayout(searchModule);
+        GroupLayout.SequentialGroup hGroup = groupLayout.createSequentialGroup().addComponent(indexButton)
+                .addComponent(label).addComponent(searchBar).addComponent(searchButton)
+                .addComponent(documentSearch).addComponent(assemblySearch).addComponent(stateSearch).addComponent(nationalSearch);
+        groupLayout.setHorizontalGroup(hGroup);
+        
+        GroupLayout.ParallelGroup vGroup = groupLayout.createParallelGroup(GroupLayout.Alignment.BASELINE).addComponent(indexButton)
+                .addComponent(label).addComponent(searchBar).addComponent(searchButton)
+                .addComponent(documentSearch).addComponent(assemblySearch).addComponent(stateSearch).addComponent(nationalSearch);
+        groupLayout.setVerticalGroup(vGroup);
+        searchModule.setLayout(groupLayout);
+        searchPanel.add(searchModule, BorderLayout.PAGE_START);
+        
+        //Map:
         FileDataStore store;
         try {
             store = FileDataStoreFinder.getDataStore(SHAPE_FILE);
@@ -253,15 +275,13 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
             Layer layer = new FeatureLayer(featureSource, style);
             map.addLayer(layer);
 
-            // Now display the map
-//            JMapFrame.showMap(map);
-            JMapFrame mapFrame = new JMapFrame(map);
-            searchModule.add(mapFrame);
+            JMapPane mapPane = new JMapPane(map);
+            searchPanel.add(mapPane, BorderLayout.CENTER);
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        tabPane.addTab("Search", searchModule);
+        
+        tabPane.addTab("Search", searchPanel);
     }
 
     /**
@@ -270,21 +290,14 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
     public static void main(String[] args) {
         //Schedule a job for the event dispatch thread:
         //        //creating and showing this application's GUI.
-        //        SwingUtilities.invokeLater(new Runnable() {
-        //            public void run() {
-        //                //Turn off metal's use of bold fonts
-        //                UIManager.put("swing.boldMetal", Boolean.FALSE); 
-        //                createAndShowGUI();
-        //            }
-        //        });
-        //    
-        // display a data store file chooser dialog for shapefiles
-        File file = JFileDataStoreChooser.showOpenFile("shp", null);
-        if (file == null) {
-            return;
-        }
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                //Turn off metal's use of bold fonts
+                UIManager.put("swing.boldMetal", Boolean.FALSE); 
+                createAndShowGUI();
+            }
+        });
 
-        
     }
 
     /**
