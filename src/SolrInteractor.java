@@ -118,7 +118,7 @@ public class SolrInteractor {
         List<SolrDocument> ans = new ArrayList<SolrDocument>();
         SolrQuery query = new SolrQuery();
         query = query.setQuery(text);
-        query = query.setFields("id", "title", "doctext_txt_en");
+        query = query.setFields("id", "state", "title", "doctext_txt_en");
         for(BasicNameValuePair param : scope)
             query = query.addFilterQuery(param.getName() + ":" + "\"" + param.getValue() + "\"");
         query = query.setStart(0);

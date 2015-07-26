@@ -96,6 +96,9 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
     static JRadioButton stateSearch;
     static JRadioButton nationalSearch;
 
+    static Mappa map;
+    static JMapPane mapPane;   
+
     static HashMap<String, ArrayList<String>> directoryToURL;
     static HashMap<String, ArrayList<String>> fileNameToURL;
 
@@ -216,7 +219,7 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
 
         //Create search tab:
         JPanel searchPanel = new JPanel(new BorderLayout());
-        
+
         //Create GroupLayout:
 
         indexButton = new JButton("Index State");
@@ -245,33 +248,19 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
                 .addComponent(label).addComponent(searchBar).addComponent(searchButton)
                 .addComponent(documentSearch).addComponent(assemblySearch).addComponent(stateSearch).addComponent(nationalSearch);
         groupLayout.setHorizontalGroup(hGroup);
-        
+
         GroupLayout.ParallelGroup vGroup = groupLayout.createParallelGroup(GroupLayout.Alignment.BASELINE).addComponent(indexButton)
                 .addComponent(label).addComponent(searchBar).addComponent(searchButton)
                 .addComponent(documentSearch).addComponent(assemblySearch).addComponent(stateSearch).addComponent(nationalSearch);
         groupLayout.setVerticalGroup(vGroup);
         searchModule.setLayout(groupLayout);
         searchPanel.add(searchModule, BorderLayout.PAGE_START);
-        
+
         //Map:
-        FileDataStore store;
-        try {
-            store = FileDataStoreFinder.getDataStore(SHAPE_FILE);
-            SimpleFeatureSource featureSource = store.getFeatureSource();
+        map = new Mappa(SHAPE_FILE);
+        mapPane = new JMapPane(map);
+        searchPanel.add(mapPane, BorderLayout.CENTER);
 
-            MapContent map = new MapContent();
-
-            Style style = SLD.createSimpleStyle(featureSource.getSchema());
-            Layer layer = new FeatureLayer(featureSource, style);
-
-            map.addLayer(layer);
-
-            JMapPane mapPane = new JMapPane(map);
-            searchPanel.add(mapPane, BorderLayout.CENTER);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        
         tabPane.addTab("Search", searchPanel);
     }
 
@@ -357,12 +346,14 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
                 List<String> states = new ArrayList<String>();
                 List<String> titles = new ArrayList<String>();
                 for(SolrDocument doc : results) {
-                    if(!states.contains(doc.get("state")))
+                    if(!states.contains(doc.getFieldValue("state")))
                         states.add((String) doc.getFieldValue("state"));
                     titles.add((String) doc.getFieldValue("title"));
                 }
                 System.out.println(titles);
+                System.out.println(states);
                 log.append("Found " + titles.size() + " match(es) in " + states.size() + " state(s)." + newline); 
+                map.setColoredStates(states);
             } catch (/*SolrServerException | IO*/Exception e1) {
                 if(debug) e1.printStackTrace();
             }
@@ -525,4 +516,5 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
 
         return builder.toString();
     }
+
 }
