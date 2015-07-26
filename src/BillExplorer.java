@@ -46,19 +46,7 @@ import javax.swing.tree.TreePath;
 
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.solr.common.SolrDocument;
-import org.geotools.data.FileDataStore;
-import org.geotools.data.FileDataStoreFinder;
-import org.geotools.data.simple.SimpleFeatureSource;
-import org.geotools.map.FeatureLayer;
-import org.geotools.map.Layer;
-import org.geotools.map.MapContent;
-import org.geotools.styling.SLD;
-import org.geotools.styling.Style;
-import org.geotools.swing.JMapFrame;
 import org.geotools.swing.JMapPane;
-import org.geotools.swing.data.JFileDataStoreChooser;
-import org.junit.runner.manipulation.Filter;
-import org.opengis.filter.IncludeFilter;
 import org.python.core.PyDictionary;
 import org.python.core.PyList;
 import org.python.core.PyObject;
@@ -392,6 +380,7 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         for (Map.Entry<PyObject, PyObject> entry : aMap.entrySet()) {
             String appId = entry.getKey().toString();
             PyList countryIdList = (PyList) entry.getValue();
+            @SuppressWarnings("unchecked")
             List<String> countryList = (List<String>) countryIdList.subList(0, countryIdList.size());
             ArrayList<String> countryArrList = new ArrayList<String>(countryList);
             pickleMap.put(appId, countryArrList);

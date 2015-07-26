@@ -1,16 +1,12 @@
 import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.geotools.data.FeatureSource;
-import org.geotools.data.FileDataStore;
 import org.geotools.data.FileDataStoreFinder;
-import org.geotools.data.Query;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.factory.CommonFactoryFinder;
@@ -20,21 +16,14 @@ import org.geotools.map.MapContent;
 import org.geotools.styling.FeatureTypeStyle;
 import org.geotools.styling.Fill;
 import org.geotools.styling.Graphic;
-import org.geotools.styling.LineSymbolizer;
 import org.geotools.styling.Mark;
-import org.geotools.styling.PointSymbolizer;
-import org.geotools.styling.PolygonSymbolizer;
 import org.geotools.styling.Rule;
 import org.geotools.styling.SLDParser;
 import org.geotools.styling.Stroke;
 import org.geotools.styling.Style;
 import org.geotools.styling.StyleFactory;
 import org.geotools.styling.Symbolizer;
-import org.geotools.swing.JMapFrame;
-import org.geotools.swing.data.JFileDataStoreChooser;
-import org.geotools.swing.styling.JSimpleStyleDialog;
 import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.GeometryDescriptor;
 import org.opengis.filter.FilterFactory;
 import org.opengis.filter.identity.FeatureId;
@@ -47,12 +36,11 @@ import com.vividsolutions.jts.geom.Polygon;
 /**
  * Wrapper class for MapContent in the Billualizer. This class provides methods which allow the
  * main class to update its map view(s) without having to manage the map content directly.
- * @author Descartes
  */
 public class Mappa extends MapContent {
-    static StyleFactory styleFactory = CommonFactoryFinder.getStyleFactory(null);
-    static FilterFactory filterFactory = CommonFactoryFinder.getFilterFactory(null);
-    static HashMap<String, FeatureId> stateAbbrToId;
+    private static StyleFactory styleFactory = CommonFactoryFinder.getStyleFactory(null);
+    private static FilterFactory filterFactory = CommonFactoryFinder.getFilterFactory(null);
+    private static HashMap<String, FeatureId> stateAbbrToId;
 
     private enum GeomType { POINT, LINE, POLYGON };
 
@@ -68,12 +56,11 @@ public class Mappa extends MapContent {
 
     private static SimpleFeatureSource featureSource;
 
-    private MapContent map;
-    
     public Mappa(File shapeFile) {
+        //Set up dictionary:
         try {
             featureSource = FileDataStoreFinder.getDataStore(shapeFile).getFeatureSource();
-            SimpleFeatureIterator sfi = featureSource/*.getFeatures(new Query("STATE_ABBR", new NationSearchFilter(null, states)))*/.getFeatures().features();
+            SimpleFeatureIterator sfi = featureSource.getFeatures().features();
 
             stateAbbrToId = new HashMap<String, FeatureId>();
 
@@ -85,31 +72,25 @@ public class Mappa extends MapContent {
             }
             finally {
                 sfi.close();
-                System.out.println("Association: " + stateAbbrToId);
             }
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
         
         setGeometry();
 
-        // Create a map content and add our shapefile to it
-//        map = new MapContent();
-
-        Style style = createDefaultStyle(); //createStyle2(featureSource);
-        //        Style style = SLD.createSimpleStyle(featureSource.getSchema());
-        Layer layer = new FeatureLayer(featureSource, style);
+        Layer layer = new FeatureLayer(featureSource, createDefaultStyle());
         this.addLayer(layer);
 
     }
     
     public void setColoredStates(List<String> states) {
+        //Fetch subset of dictionary corresponding to the matching states
         Set<FeatureId> ids = new HashSet<FeatureId>();
         for(String state : states) 
             ids.add(stateAbbrToId.get(state));
         
-         List<Layer> layers = this.layers();
+         List<Layer> layers = this.layers();    
          for(Layer layer : layers) 
              this.removeLayer(layer);
          
@@ -117,22 +98,6 @@ public class Mappa extends MapContent {
          this.addLayer(new FeatureLayer(featureSource, createSelectedStyle(ids)));
     }
     
-    /**
-     * Create a Style to display the features. If an SLD file is in the same
-     * directory as the shapefile then we will create the Style by processing
-     * this. Otherwise we display a JSimpleStyleDialog to prompt the user for
-     * preferences.
-     */
-    private static Style createStyle(File file, FeatureSource featureSource) {
-        File sld = toSLDFile(file);
-        if (sld != null) {
-            return createFromSLD(sld);
-        }
-
-        SimpleFeatureType schema = (SimpleFeatureType)featureSource.getSchema();
-        return JSimpleStyleDialog.showDialog(null, schema);
-    }
-
     /**
      * Create a Style where features with given IDs are painted
      * yellow, while others are painted with the default colors.
@@ -176,6 +141,7 @@ public class Mappa extends MapContent {
     /**
      * Create a Style object from a definition in a SLD document
      */
+    @SuppressWarnings("unused")
     private static Style createFromSLD(File sld) {
         try {
             SLDParser stylereader = new SLDParser(styleFactory, sld.toURI().toURL());
@@ -190,57 +156,6 @@ public class Mappa extends MapContent {
     }
 
     /**
-     * Here is a programmatic alternative to using JSimpleStyleDialog to
-     * get a Style. This methods works out what sort of feature geometry
-     * we have in the shapefile and then delegates to an appropriate style
-     * creating method.
-     */
-    private static Style createStyle2(FeatureSource featureSource) {
-        SimpleFeatureType schema = (SimpleFeatureType)featureSource.getSchema();
-        Class geomType = schema.getGeometryDescriptor().getType().getBinding();
-
-        if (Polygon.class.isAssignableFrom(geomType)
-                || MultiPolygon.class.isAssignableFrom(geomType)) {
-
-            return createPolygonStyle();
-
-        } else if (LineString.class.isAssignableFrom(geomType)
-                || MultiLineString.class.isAssignableFrom(geomType)) {
-            return createLineStyle();
-
-        } else {
-            return createPointStyle();
-        }
-    }
-
-    /**
-     * Create a Style to draw polygon features with a thin blue outline and
-     * a cyan fill
-     */
-    private static Style createPolygonStyle() {
-        // create a partially opaque outline stroke
-        Stroke stroke = styleFactory.createStroke(
-                filterFactory.literal(Color.BLUE),
-                filterFactory.literal(1),
-                filterFactory.literal(0.5));
-
-        // create a partial opaque fill
-        Fill fill = styleFactory.createFill(
-                filterFactory.literal(Color.CYAN),
-                filterFactory.literal(0.5));
-
-        PolygonSymbolizer sym = styleFactory.createPolygonSymbolizer(stroke, fill, null);
-        Rule rule = createRule(Color.DARK_GRAY, Color.GREEN);
-        rule.symbolizers().add(sym);
-
-        FeatureTypeStyle fts = styleFactory.createFeatureTypeStyle(new Rule[]{rule});
-        Style style = styleFactory.createStyle();
-        style.featureTypeStyles().add(fts);
-
-        return style;
-    }
-
-    /**
      * Create a default Style for feature display
      */
     private static Style createDefaultStyle() {
@@ -251,62 +166,6 @@ public class Mappa extends MapContent {
 
         Style style = styleFactory.createStyle();
         style.featureTypeStyles().add(fts);
-        return style;
-    }
-
-    /**
-     * Create a Style to draw line features as thin blue lines
-     */
-    private static Style createLineStyle() {
-        Stroke stroke = styleFactory.createStroke(
-                filterFactory.literal(Color.BLUE),
-                filterFactory.literal(1));
-
-        /*
-         * Setting the geometryPropertyName arg to null signals that we want to
-         * draw the default geomettry of features
-         */
-        LineSymbolizer sym = styleFactory.createLineSymbolizer(stroke, null);
-
-        Rule rule = styleFactory.createRule();
-        rule.symbolizers().add(sym);
-        FeatureTypeStyle fts = styleFactory.createFeatureTypeStyle(new Rule[]{rule});
-        Style style = styleFactory.createStyle();
-        style.featureTypeStyles().add(fts);
-
-        return style;
-    }
-
-    /**
-     * Create a Style to draw point features as circles with blue outlines
-     * and cyan fill
-     */
-    private static Style createPointStyle() {
-        Graphic gr = styleFactory.createDefaultGraphic();
-
-        Mark mark = styleFactory.getCircleMark();
-
-        mark.setStroke(styleFactory.createStroke(
-                filterFactory.literal(Color.BLUE), filterFactory.literal(1)));
-
-        mark.setFill(styleFactory.createFill(filterFactory.literal(Color.CYAN)));
-
-        gr.graphicalSymbols().clear();
-        gr.graphicalSymbols().add(mark);
-        gr.setSize(filterFactory.literal(5));
-
-        /*
-         * Setting the geometryPropertyName arg to null signals that we want to
-         * draw the default geomettry of features
-         */
-        PointSymbolizer sym = styleFactory.createPointSymbolizer(gr, null);
-
-        Rule rule = styleFactory.createRule();
-        rule.symbolizers().add(sym);
-        FeatureTypeStyle fts = styleFactory.createFeatureTypeStyle(new Rule[]{rule});
-        Style style = styleFactory.createStyle();
-        style.featureTypeStyles().add(fts);
-
         return style;
     }
 
