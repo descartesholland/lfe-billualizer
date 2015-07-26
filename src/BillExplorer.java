@@ -57,6 +57,8 @@ import org.geotools.styling.Style;
 import org.geotools.swing.JMapFrame;
 import org.geotools.swing.JMapPane;
 import org.geotools.swing.data.JFileDataStoreChooser;
+import org.junit.runner.manipulation.Filter;
+import org.opengis.filter.IncludeFilter;
 import org.python.core.PyDictionary;
 import org.python.core.PyList;
 import org.python.core.PyObject;
@@ -219,16 +221,11 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
 
         indexButton = new JButton("Index State");
         indexButton.addActionListener(this);
-//        searchModule.add(indexButton, BorderLayout.PAGE_START);
-
-//        searchModule.add(new JLabel("Search: "));
 
         searchBar = new JTextField(8);
-//        searchModule.add(searchBar, BorderLayout.PAGE_START);
 
         searchButton = new JButton("Search");
         searchButton.addActionListener(this);
-//        searchModule.add(searchButton, BorderLayout.PAGE_START);
 
         searchTypeRadioGroup = new ButtonGroup();
         documentSearch = new JRadioButton("Document");
@@ -241,10 +238,6 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         searchTypeRadioGroup.add(stateSearch);
         searchTypeRadioGroup.add(nationalSearch);
 
-//        searchModule.add(documentSearch, BorderLayout.PAGE_START);
-//        searchModule.add(assemblySearch, BorderLayout.PAGE_START);
-//        searchModule.add(stateSearch, BorderLayout.PAGE_START);
-//        searchModule.add(nationalSearch, BorderLayout.PAGE_START);
         JPanel searchModule = new JPanel();
         JLabel label = new JLabel("Search: ");
         GroupLayout groupLayout = new GroupLayout(searchModule);
@@ -264,15 +257,13 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         FileDataStore store;
         try {
             store = FileDataStoreFinder.getDataStore(SHAPE_FILE);
-
             SimpleFeatureSource featureSource = store.getFeatureSource();
 
-            // Create a map content and add our shapefile to it
             MapContent map = new MapContent();
-            map.setTitle("Quickstart");
 
             Style style = SLD.createSimpleStyle(featureSource.getSchema());
             Layer layer = new FeatureLayer(featureSource, style);
+
             map.addLayer(layer);
 
             JMapPane mapPane = new JMapPane(map);
