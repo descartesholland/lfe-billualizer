@@ -16,16 +16,18 @@ public class DirectoriesSwingWorker extends SwingWorker<MyTreeModel, Object> {
     protected MyTreeModel doInBackground() throws Exception {
         //Perform some computation/loading:
         BillExplorer.directoryToURL = BillExplorer.loadPickleList(new File(new File(new File(BillExplorer.masterDir, BillExplorer.stateList.getSelectedValue()), "hashes"), "json_to_url_dict.p"));
-        BillExplorer.fileNameToURL = new HashMap<String, ArrayList<String>>();
-        for(String key : BillExplorer.directoryToURL.keySet()) {
-            try {
-                BillExplorer.fileNameToURL.put(key.substring(key.lastIndexOf('/')+1), BillExplorer.directoryToURL.get(key));
-            }
-            catch(IndexOutOfBoundsException e2) {
-                BillExplorer.log.append("Non-json file \"" + key + "\" detected" + BillExplorer.newline);
-                if(BillExplorer.debug) e2.printStackTrace();
-            }
-        }
+//        BillExplorer.fileNameToURL = new HashMap<String, ArrayList<String>>();
+        BillExplorer.urlToSavedFileName = BillExplorer.loadPickleString(new File(new File(new File(BillExplorer.masterDir, BillExplorer.stateList.getSelectedValue()), "hashes"), "url_to_savedFileName_dict.p"));
+//        for(String key : BillExplorer.directoryToURL.keySet()) {
+//            try {
+//                continue;
+////                BillExplorer.fileNameToURL.put(key.substring(key.lastIndexOf('/')+1), BillExplorer.directoryToURL.get(key));
+//            }
+//            catch(IndexOutOfBoundsException e2) {
+//                BillExplorer.log.append("Non-json file \"" + key + "\" detected" + BillExplorer.newline);
+//                if(BillExplorer.debug) e2.printStackTrace();
+//            }
+//        }
 
         BillExplorer.selectedStateJsonDir = new File(new File(new File(new File(BillExplorer.masterDir, BillExplorer.stateList.getSelectedValue()), "json"), "bills"), BillExplorer.stateList.getSelectedValue().toLowerCase());
         return new MyTreeModel(new FileTreeNode(BillExplorer.selectedStateJsonDir, BillExplorer.stateList.getSelectedValue()));

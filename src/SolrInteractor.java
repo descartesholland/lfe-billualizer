@@ -57,11 +57,12 @@ public class SolrInteractor {
 
                         try {   
                             ArrayList<String> urls = BillExplorer.directoryToURL.get(f.getAbsolutePath().substring(stateDirectory.getAbsolutePath().length()+1).replace('\\', '/'));
-                            String fileName = urlToFileName.get(urls.get(urls.size() - 1));
+                            String fileName = urlToFileName.get(urls.get(0/*urls.size() - 1*/));
 
                             String content = tika.parseToString(TikaInputStream.get(new File(stateDirectory, fileName), new Metadata()));
                             content = content.replace("\n\n", "");
                             content = content.replace("  ", " ");
+                            System.out.println(content);
                             doc.addField("doctext_txt_en", content);
                         } catch (IOException e) {
                             failures.add(f.getAbsolutePath().substring(BillExplorer.masterDir.getAbsolutePath().length()));

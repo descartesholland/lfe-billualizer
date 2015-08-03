@@ -73,6 +73,7 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
     JEditorPane billsViewer;
     static File selectedStateJsonDir;
     JTextArea jsonViewer;
+    JTextArea textViewer;
     JTabbedPane tabPane;
     static JButton searchButton;
     static JButton indexButton;
@@ -88,7 +89,8 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
     static JMapPane mapPane;   
 
     static HashMap<String, ArrayList<String>> directoryToURL;
-    static HashMap<String, ArrayList<String>> fileNameToURL;
+//    static HashMap<String, ArrayList<String>> fileNameToURL;
+    static HashMap<String, String> urlToSavedFileName;
 
     final static String newline = "\n";
     static String selectedAssemblyName;
@@ -100,8 +102,6 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
     public BillExplorer() {
         super(new BorderLayout());
 
-        //Create the log first, because the action listeners
-        //need to refer to it.
         log = new JTextArea(3,20);
         log.setMargin(new Insets(2,2,2,2));
         log.setEditable(false);
@@ -198,10 +198,11 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         tabPane.addTab("Bills", billsViewerScrollPane);
 
         //Create text tab:
-        JTextArea textViewer = new JTextArea(20, 20);
+        textViewer = new JTextArea(20, 20);
         textViewer.setPreferredSize(new Dimension(200, 150));
         textViewer.setMargin(new Insets(5, 5, 5, 5));
         textViewer.setEditable(false);
+        textViewer.setWrapStyleWord(true);
         JScrollPane textViewerScrollPane = new JScrollPane(textViewer);
         tabPane.addTab("Text", textViewerScrollPane);
 
@@ -301,13 +302,7 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
                 for(String fileName : masterDir.list())
                     model.addElement(fileName);
                 stateList.setModel(model);
-
                 stateList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-                stateList.setSelectedIndex(0);
-                selectedStateJsonDir = new File(new File(new File(new File(masterDir, stateList.getSelectedValue()), "json"), "bills"), stateList.getSelectedValue().toLowerCase());
-
-                //Populate directories for default state:
-                directories.setModel(new MyTreeModel(new FileTreeNode(selectedStateJsonDir, stateList.getSelectedValue())));
             } 
             else {
                 log.append("Open command cancelled by user." + newline);
@@ -385,12 +380,14 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
             ArrayList<String> countryArrList = new ArrayList<String>(countryList);
             pickleMap.put(appId, countryArrList);
         }
+//        if(debug) System.out.println(pickleMap);
         return pickleMap;
     }
 
     public static HashMap<String, String> loadPickleString(File pickle) {
         HashMap<String, String> pickleMap = new HashMap<String, String>();
         log.append("Loading pickle " + pickle.getPath() + " of length " + pickle.length() + newline);
+
         BufferedReader bufR;
         StringBuilder strBuilder = new StringBuilder();
         try {
@@ -413,6 +410,7 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
             PyString countryIdList = (PyString) entry.getValue();
             pickleMap.put(appId, countryIdList.asString());
         }
+        if(debug) System.out.println(pickleMap);
         return pickleMap;
     }
 
@@ -424,18 +422,9 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
 
             //Update tabs:
             if(((FileTreeNode) arg0.getPath().getLastPathComponent()).isLeaf()) {
-                try {
-                    log.append("Looking for: " + ((FileTreeNode) directories.getSelectionPath().getLastPathComponent()).getTitle() + newline);
-                    ArrayList<String> versions = directoryToURL.get(buildFileFromTreePath(directories.getSelectionPath()));
-                    billsViewer.setPage(versions.get(versions.size()-1));
-                } catch (IOException e) {
-                    log.append("Invalid URL." + newline);
-                    if(debug) e.printStackTrace();
-                } catch (NullPointerException e) {
-                    log.append("NPE. Check connectivity." + newline);
-                    if(debug) e.printStackTrace();
-                }
-
+                log.append("Looking for: " + ((FileTreeNode) directories.getSelectionPath().getLastPathComponent()).getTitle() + newline);
+                
+                //JSON tab:
                 try {
                     File json = ((FileTreeNode) arg0.getPath().getLastPathComponent()).getFile();
                     BufferedReader jsonReader = new BufferedReader(new FileReader(json));
@@ -450,6 +439,37 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
                     if(debug) e.printStackTrace();
                 } catch(IOException e) {
                     log.append("Error reading file." + newline);
+                    if(debug) e.printStackTrace();
+                }
+                
+                //Grab URLs of each bill version:
+                ArrayList<String> versions = directoryToURL.get(buildFileFromTreePath(directories.getSelectionPath()));
+                
+                //Bills tab:
+                try {
+                    billsViewer.setPage(versions.get(versions.size()-1));
+                } catch (IOException e) {
+                    log.append("Invalid URL." + newline);
+                    if(debug) e.printStackTrace();
+                } catch (NullPointerException e) {
+                    log.append("NPE. Check connectivity." + newline);
+                    if(debug) e.printStackTrace();
+                }
+
+                //Text tab:
+                try {
+                    File textFile = new File(new File(masterDir, stateList.getSelectedValue()), (urlToSavedFileName.get(versions.get(versions.size() - 1))).replace("raw_bills", "text") + ".txt");
+                    
+                    StringBuilder text = new StringBuilder();
+                    BufferedReader buff = new BufferedReader(new FileReader(textFile));
+                    String line;
+                    while((line = buff.readLine()) != null) 
+                        text.append(line + newline);
+                    buff.close();
+                    
+                    textViewer.setText(text.toString());
+                } catch(NullPointerException | IOException e) {
+                    log.append("No corresponding text file found for URL " + versions.get(versions.size() - 1) + newline);
                     if(debug) e.printStackTrace();
                 }
             }
@@ -482,7 +502,7 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
     @Override
     public void valueChanged(ListSelectionEvent e) {
         //Handle state switching:
-        if(e.getSource() == stateList && e.getFirstIndex() != e.getLastIndex()) {
+        if(e.getSource() == stateList) {
             log.append("Loading..." + newline);
 
             new DirectoriesSwingWorker().execute();
