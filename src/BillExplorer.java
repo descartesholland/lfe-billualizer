@@ -184,7 +184,10 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
         jsonViewer.setPreferredSize(new Dimension(250, 200));
         jsonViewer.setMargin(new Insets(5, 5, 5, 5));
         jsonViewer.setEditable(false);
+        jsonViewer.setLineWrap(true);
+        jsonViewer.setWrapStyleWord(true);
         JScrollPane jsonViewerScrollPane = new JScrollPane(jsonViewer);
+        jsonViewerScrollPane.setViewportView(jsonViewer);
         //        jsonViewerScrollPane.setPreferredSize(new Dimension(200, 200));
         tabPane.addTab("JSON", jsonViewerScrollPane);
 
@@ -199,12 +202,16 @@ public class BillExplorer extends JPanel implements ActionListener, TreeSelectio
 
         //Create text tab:
         textViewer = new JTextArea(20, 20);
-        textViewer.setPreferredSize(new Dimension(200, 150));
+//        textViewer.setMinimumSize(new Dimension(200, 150));
+//        textViewer.setPreferredSize(new Dimension(400, 450));
         textViewer.setMargin(new Insets(5, 5, 5, 5));
         textViewer.setEditable(false);
         textViewer.setWrapStyleWord(true);
-        JScrollPane textViewerScrollPane = new JScrollPane(textViewer);
-        tabPane.addTab("Text", textViewerScrollPane);
+        JScrollPane textViewerScrollPane = new JScrollPane();
+        textViewerScrollPane.setViewportView(textViewer);
+        JPanel textPanel = new JPanel(new BorderLayout());
+        textPanel.add(textViewerScrollPane);
+        tabPane.addTab("Text", textPanel);
 
         //Create search tab:
         JPanel searchPanel = new JPanel(new BorderLayout());
